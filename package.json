@@ -33,7 +33,9 @@
     "bin",
     "resources"
   ],
-  "dependencies": {},
+  "dependencies": {
+    "airent": "github:cshaxu/airent-js#3ed460e82f66ceb038ab833116f1201830a7d161"
+  },
   "devDependencies": {
     "crlf": "^1.1.1"
   }

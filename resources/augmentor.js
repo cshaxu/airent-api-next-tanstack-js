@@ -1,48 +1,41 @@
-const path = require('path');
-const utils = require('airent/resources/utils.js');
+const path = require("path");
 
-function buildRelativePath(sourcePath, targetPath) /* string */ {
-  const rawRelativePath = path
-    .relative(sourcePath, targetPath)
-    .replaceAll('\\', '/');
-  return rawRelativePath.startsWith('.')
-    ? rawRelativePath
-    : `./${rawRelativePath}`;
-}
+const codeUtils = require("airent/resources/utils/code.js");
+const pathUtils = require("airent/resources/utils/path.js");
 
 // augment entity - add packages
 
 function addPackages(entity, config) {
-  const kababEntName = utils.toKababCase(entity.name);
-  const suffix = utils.getModuleSuffix(config);
-  const hooksPath = path.join(config.generatedPath, 'tanstack-hooks');
+  const kababEntName = codeUtils.toKababCase(entity.name);
+  const suffix = codeUtils.getModuleSuffix(config);
+  const hooksPath = path.join(config.generatedPath, "tanstack-hooks");
 
   entity._packages.apiNextTanstack = {
-    hookToTypeFull: buildRelativePath(
+    hookToTypeFull: pathUtils.buildRelativePath(
       hooksPath,
-      path.join(config.generatedPath, 'types', entity._strings.moduleName)
+      path.join(config.generatedPath, "types", entity._strings.moduleName)
     ),
-    hookToRequestFull: buildRelativePath(
+    hookToRequestFull: pathUtils.buildRelativePath(
       hooksPath,
       path.join(config.api.typesPath, entity._strings.moduleName)
     ),
-    hookToClientFull: buildRelativePath(
+    hookToClientFull: pathUtils.buildRelativePath(
       hooksPath,
-      path.join(config.generatedPath, 'clients', entity._strings.moduleName)
+      path.join(config.generatedPath, "clients", entity._strings.moduleName)
     ),
-    hookToServerClientFull: buildRelativePath(
+    hookToServerClientFull: pathUtils.buildRelativePath(
       hooksPath,
       path.join(
         config.generatedPath,
-        'server-clients',
+        "server-clients",
         entity._strings.moduleName
       )
     ),
-    hookToCachedServerClientFull: buildRelativePath(
+    hookToCachedServerClientFull: pathUtils.buildRelativePath(
       hooksPath,
       path.join(
         config.generatedPath,
-        'server-clients',
+        "server-clients",
         `${kababEntName}-cached${suffix}`
       )
     ),

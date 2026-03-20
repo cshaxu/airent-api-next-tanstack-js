@@ -2,23 +2,16 @@
 
 const fs = require("fs");
 const path = require("path");
-const readline = require("readline");
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
-
-function askQuestion(question, defaultAnswer) {
-  return new Promise((resolve) =>
-    rl.question(`${question} (${defaultAnswer}): `, resolve)
-  ).then((a) => (a?.length ? a : defaultAnswer));
-}
-
-async function getShouldEnable(name) {
-  const shouldEnable = await askQuestion(`Enable "${name}"`, "yes");
-  return shouldEnable === "yes";
-}
+const configUtils = require("airent/resources/utils/configurator.js");
+const {
+  addTemplate,
+  createPrompt,
+  getShouldEnable,
+  loadJsonConfig,
+  normalizeConfigCollections,
+  writeJsonConfig,
+} = configUtils;
 
 /** @typedef {Object} Config
  *  @property {"commonjs" | "module"} type
@@ -66,54 +59,44 @@ const API_NEXT_TANSTACK_TEMPLATE_CONFIGS = [
 ];
 
 async function loadConfig() {
-  const configContent = await fs.promises.readFile(CONFIG_FILE_PATH, "utf8");
-  const config = JSON.parse(configContent);
-  const augmentors = config.augmentors ?? [];
-  const templates = config.templates ?? [];
-  return { ...config, augmentors, templates };
-}
-
-function addTemplate(config, draftTemplate) {
-  const { templates } = config;
-  const template = templates.find((t) => t.name === draftTemplate.name);
-  if (template === undefined) {
-    templates.push(draftTemplate);
-  }
+  return normalizeConfigCollections(await loadJsonConfig(CONFIG_FILE_PATH));
 }
 
 async function configure() {
-  const config = await loadConfig();
-  const { augmentors } = config;
-  const isAugmentorEnabled = augmentors.includes(
-    API_NEXT_TANSTACK_AUGMENTOR_PATH
-  );
-  const shouldEnableApiNextTanstack = isAugmentorEnabled
-    ? true
-    : await getShouldEnable("Api Next Tanstack");
-  if (!shouldEnableApiNextTanstack) {
-    return;
-  }
-  if (!isAugmentorEnabled) {
-    augmentors.push(API_NEXT_TANSTACK_AUGMENTOR_PATH);
-  }
-  API_NEXT_TANSTACK_TEMPLATE_CONFIGS.forEach((t) => addTemplate(config, t));
+  const prompt = createPrompt();
+  const { askQuestion } = prompt;
 
-  const content = JSON.stringify(config, null, 2) + "\n";
-  await fs.promises.writeFile(CONFIG_FILE_PATH, content);
-  console.log(`[AIRENT-API-NEXT-TANSTACK/INFO] Package configured.`);
+  try {
+    const config = await loadConfig();
+    const { augmentors } = config;
+    const isAugmentorEnabled = augmentors.includes(
+      API_NEXT_TANSTACK_AUGMENTOR_PATH
+    );
+    const shouldEnableApiNextTanstack = isAugmentorEnabled
+      ? true
+      : await getShouldEnable(askQuestion, "Api Next Tanstack");
+    if (!shouldEnableApiNextTanstack) {
+      return;
+    }
+    if (!isAugmentorEnabled) {
+      augmentors.push(API_NEXT_TANSTACK_AUGMENTOR_PATH);
+    }
+    API_NEXT_TANSTACK_TEMPLATE_CONFIGS.forEach((t) => addTemplate(config, t));
+
+    await writeJsonConfig(CONFIG_FILE_PATH, config);
+    console.log(`[AIRENT-API-NEXT-TANSTACK/INFO] Package configured.`);
+  } finally {
+    prompt.close();
+  }
 }
 
 async function main() {
-  try {
-    if (!fs.existsSync(CONFIG_FILE_PATH)) {
-      throw new Error(
-        '[AIRENT-API-NEXT-TANSTACK/ERROR] "airent.config.json" not found'
-      );
-    }
-    await configure();
-  } finally {
-    rl.close();
+  if (!fs.existsSync(CONFIG_FILE_PATH)) {
+    throw new Error(
+      '[AIRENT-API-NEXT-TANSTACK/ERROR] "airent.config.json" not found'
+    );
   }
+  await configure();
 }
 
 main().catch(console.error);
