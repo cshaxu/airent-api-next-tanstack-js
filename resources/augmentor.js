@@ -3,6 +3,23 @@ const path = require("path");
 const codeUtils = require("airent/resources/utils/code.js");
 const pathUtils = require("airent/resources/utils/path.js");
 
+const DEFAULT_FIELD_REQUESTS_IMPORT_PATH = "@/frontend/types/data";
+
+function addConfigPackages(config) {
+  config._packages = config._packages ?? {};
+  config._packages.apiNextTanstack = {
+    fieldRequestsImportPath:
+      config.apiNextTanstack?.fieldRequestsImportPath ??
+      DEFAULT_FIELD_REQUESTS_IMPORT_PATH,
+    ...(config.apiNextTanstack?.mutationErrorHandlerImportPath
+      ? {
+          mutationErrorHandlerImportPath:
+            config.apiNextTanstack.mutationErrorHandlerImportPath,
+        }
+      : {}),
+  };
+}
+
 // augment entity - add packages
 
 function addPackages(entity, config) {
@@ -44,6 +61,7 @@ function addPackages(entity, config) {
 
 function augment(data) {
   const { entityMap, config } = data;
+  addConfigPackages(config);
   const entityNames = Object.keys(entityMap).sort();
   const entities = entityNames.map((n) => entityMap[n]);
   entities.forEach((entity) => addPackages(entity, config));

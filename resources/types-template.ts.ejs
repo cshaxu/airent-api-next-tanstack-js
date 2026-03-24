@@ -33,7 +33,7 @@ import {
   <%_ if (entity._booleans.api.hasGetOne || entity._booleans.api.hasGetOneSafe || entity._booleans.api.hasCreateOne || entity._booleans.api.hasUpdateOne) { -%>
   <%= getGetOneFieldRequestName() %>,
   <%_ } -%>
-} from '@/frontend/types/data';
+} from '<%- config._packages.apiNextTanstack.fieldRequestsImportPath %>';
   <%_ if (entity._booleans.api.hasSearch) { -%>
 
     <%_ if (entity.deprecated) { -%>

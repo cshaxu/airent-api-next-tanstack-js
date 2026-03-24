@@ -18,8 +18,14 @@ const {
  *  @property {?string} libImportPath
  *  @property {string} schemaPath
  *  @property {string} entityPath
+ *  @property {?ApiNextTanstackConfig} [apiNextTanstack]
  *  @property {?string[]} [augmentors]
  *  @property {?Template[]} [templates]
+ */
+
+/** @typedef {Object} ApiNextTanstackConfig
+ *  @property {?string} [fieldRequestsImportPath]
+ *  @property {?string} [mutationErrorHandlerImportPath]
  */
 
 const PROJECT_PATH = process.cwd();
@@ -29,6 +35,7 @@ const AIRENT_API_NEXT_TANSTACK_RESOURCES_PATH =
   "node_modules/@airent/api-next-tanstack/resources";
 const API_NEXT_TANSTACK_AUGMENTOR_PATH =
   `${AIRENT_API_NEXT_TANSTACK_RESOURCES_PATH}/augmentor.js`;
+const DEFAULT_FIELD_REQUESTS_IMPORT_PATH = "@/frontend/types/data";
 
 const API_NEXT_TANSTACK_TEMPLATE_CONFIGS = [
   {
@@ -81,6 +88,17 @@ async function configure() {
     if (!isAugmentorEnabled) {
       augmentors.push(API_NEXT_TANSTACK_AUGMENTOR_PATH);
     }
+    config.apiNextTanstack = {
+      fieldRequestsImportPath:
+        config.apiNextTanstack?.fieldRequestsImportPath ??
+        DEFAULT_FIELD_REQUESTS_IMPORT_PATH,
+      ...(config.apiNextTanstack?.mutationErrorHandlerImportPath
+        ? {
+            mutationErrorHandlerImportPath:
+              config.apiNextTanstack.mutationErrorHandlerImportPath,
+          }
+        : {}),
+    };
     API_NEXT_TANSTACK_TEMPLATE_CONFIGS.forEach((t) => addTemplate(config, t));
 
     await writeJsonConfig(CONFIG_FILE_PATH, config);

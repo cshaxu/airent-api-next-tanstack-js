@@ -22,6 +22,10 @@ function getGetManyFieldRequestName() {
 function getGetOneFieldRequestName() {
   return `GetOne${utils.toPascalCase(entity.name)}FieldRequest`;
 }
+
+function hasMutationErrorHandler() {
+  return !!config._packages.apiNextTanstack.mutationErrorHandlerImportPath;
+}
 -%>
 <% if (entity._booleans.api.hasAny) { -%>
 'use client';
@@ -39,8 +43,8 @@ import {
 } from '@tanstack/react-query';
 
 // config imports
-  <%_ if (entity._booleans.api.hasSearch || entity._booleans.api.hasCreateOne || entity._booleans.api.hasUpdateOne || entity._booleans.api.hasDeleteOne) { -%>
-import useHandleMutationError from '@/frontend/hooks/useHandleMutationError';
+  <%_ if (hasMutationErrorHandler() && (entity._booleans.api.hasSearch || entity._booleans.api.hasCreateOne || entity._booleans.api.hasUpdateOne || entity._booleans.api.hasDeleteOne)) { -%>
+import useHandleMutationError from '<%- config._packages.apiNextTanstack.mutationErrorHandlerImportPath %>';
   <%_ } -%>
 import {
   <%_ if (entity._booleans.api.hasSearch) { -%>
@@ -52,7 +56,7 @@ import {
   <%_ if (entity._booleans.api.hasGetOne || entity._booleans.api.hasGetOneSafe || entity._booleans.api.hasCreateOne || entity._booleans.api.hasUpdateOne) { -%>
   <%= getGetOneFieldRequestName() %>,
   <%_ } -%>
-} from '@/frontend/types/data';
+} from '<%- config._packages.apiNextTanstack.fieldRequestsImportPath %>';
 
 // entity imports
 import <%= entity._strings.api.apiClientClass %> from '<%- entity._packages.apiNextTanstack.hookToClientFull %>';
@@ -149,12 +153,14 @@ export function <%= `useMutationSearch${utils.pluralize(utils.toPascalCase(entit
   any,
   <%= entity._strings.api.searchQuery %>
 > {
+  <%_ if (hasMutationErrorHandler()) { -%>
   const onError = useHandleMutationError();
+  <%_ } -%>
   const mutationFn = (query: <%= entity._strings.api.searchQuery %>) =>
     <%= entity._strings.api.apiClientClass %>
       .search(query, <%= getSearchFieldRequestName() %>)
       .then((page) => page.<%= utils.pluralize(utils.toCamelCase(entity.name)) %>);
-  return useMutation({ mutationFn, onError, ...options });
+  return useMutation({ mutationFn<%_ if (hasMutationErrorHandler()) { -%>, onError<%_ } -%>, ...options });
 }
   <%_ } -%>
   <%_ if (entity._booleans.api.hasCreateOne) { -%>
@@ -176,11 +182,13 @@ export function useCreateOne<%= utils.toPascalCase(entity.name) %>(
       .then((page) => page.<%= utils.toCamelCase(entity.name) %>);
 
   const queryClient = useQueryClient();
+  <%_ if (hasMutationErrorHandler()) { -%>
   const onError = useHandleMutationError();
+  <%_ } -%>
 
   const onSuccess = () => queryClient.invalidateQueries({ queryKey: <%= getKeysName() %>.getManyAll() });
 
-  return useMutation({ mutationKey, mutationFn, onSuccess, onError, ...options });
+  return useMutation({ mutationKey, mutationFn, onSuccess<%_ if (hasMutationErrorHandler()) { -%>, onError<%_ } -%>, ...options });
 }
   <%_ } -%>
   <%_ if (entity._booleans.api.hasUpdateOne) { -%>
@@ -207,7 +215,9 @@ export function <%= `useUpdateOne${utils.toPascalCase(entity.name)}` %>(
       .then((page) => page.<%= utils.toCamelCase(entity.name) %>);
 
   const queryClient = useQueryClient();
+  <%_ if (hasMutationErrorHandler()) { -%>
   const onError = useHandleMutationError();
+  <%_ } -%>
   
   const onSuccess = (
     data: <%= `GetOne${entity._strings.selectedResponseClass}` %>,
@@ -217,7 +227,7 @@ export function <%= `useUpdateOne${utils.toPascalCase(entity.name)}` %>(
     queryClient.setQueryData(<%= getKeysName() %>.getOne(params), data);
   }
 
-  return useMutation({ mutationKey, mutationFn, onSuccess, onError, ...options });
+  return useMutation({ mutationKey, mutationFn, onSuccess<%_ if (hasMutationErrorHandler()) { -%>, onError<%_ } -%>, ...options });
 }
   <%_ } -%>
   <%_ if (entity._booleans.api.hasDeleteOne) { -%>
@@ -235,14 +245,16 @@ export function <%= `useDeleteOne${utils.toPascalCase(entity.name)}` %>(
       .then((page) => page.<%= utils.toCamelCase(entity.name) %>);
 
   const queryClient = useQueryClient();
+  <%_ if (hasMutationErrorHandler()) { -%>
   const onError = useHandleMutationError();
+  <%_ } -%>
 
   const onSuccess = (_: {}, params: <%= entity._strings.api.getOneParams %>) => {
     queryClient.invalidateQueries({ queryKey: <%= getKeysName() %>.getManyAll() });
     queryClient.invalidateQueries({ queryKey: <%= getKeysName() %>.getOne(params) });
   }
 
-  return useMutation({ mutationKey, mutationFn, onSuccess, onError, ...options });
+  return useMutation({ mutationKey, mutationFn, onSuccess<%_ if (hasMutationErrorHandler()) { -%>, onError<%_ } -%>, ...options });
 }
   <%_ } -%>
 <% } -%>
